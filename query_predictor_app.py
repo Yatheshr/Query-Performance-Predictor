@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 # 1. Load Real SQL Query Logs (Updated Caching Method)
 @st.cache_data
@@ -16,9 +17,7 @@ def preprocess_and_train_model(df):
 
     # Handle NaN values: either drop or fill them
     df.dropna(subset=['avg_exec_time_ms'], inplace=True)  # Drop rows with NaN in 'avg_exec_time_ms'
-    # Or you could fill NaN with a default value:
-    # df['avg_exec_time_ms'].fillna(0, inplace=True)
-
+    
     # Define 'slow' query threshold (avg_exec_time_ms > 1000 ms)
     df['is_slow'] = df['avg_exec_time_ms'] > 1000
     features = ['query_length', 'num_joins', 'has_subquery', 'uses_index']
@@ -42,12 +41,19 @@ def preprocess_and_train_model(df):
     X = X.dropna()
     y = y[X.index]  # Make sure to align y with X after dropping NaN rows
 
-    # Verify that X and y are properly shaped
+    # Check the shape and data types
     st.write("Shape of X:", X.shape)
     st.write("Shape of y:", y.shape)
-
-    if X.shape[0] == 0 or y.shape[0] == 0:
-        st.error("Error: No valid data available for training. Check the input CSV.")
+    st.write("Data Types of X:", X.dtypes)
+    
+    # Ensure that all features are numeric
+    if not np.issubdtype(X.dtypes[0], np.number):  # Check if all columns are numeric
+        st.error("Error: Non-numeric data found in the feature columns.")
+        return None
+    
+    # If shapes of X and y don't match, raise an error
+    if X.shape[0] != y.shape[0]:
+        st.error("Error: Mismatch in the number of samples between features and target.")
         return None
 
     # Train a RandomForest model
