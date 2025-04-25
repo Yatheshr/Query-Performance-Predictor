@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 
 # 1. Load Real SQL Query Logs (Updated Caching Method)
 @st.cache_data
@@ -11,9 +10,27 @@ def load_data_from_csv(file):
 
 # 2. Preprocess Data and Train the Model
 def preprocess_and_train_model(df):
+    # Check the columns of the DataFrame to understand what data is available
+    st.write("Data Columns:", df.columns)
+
+    # Ensure 'avg_exec_time_ms' is numeric, coercing any errors into NaN
+    df['avg_exec_time_ms'] = pd.to_numeric(df['avg_exec_time_ms'], errors='coerce')
+
+    # Handle NaN values: either drop or fill them
+    #df.dropna(subset=['avg_exec_time_ms'], inplace=True)  # Drop rows with NaN in 'avg_exec_time_ms'
+    # Or you could fill NaN with a default value:
+    df['avg_exec_time_ms'].fillna(0, inplace=True)
+
     # Define 'slow' query threshold (avg_exec_time_ms > 1000 ms)
     df['is_slow'] = df['avg_exec_time_ms'] > 1000
     features = ['query_length', 'num_joins', 'has_subquery', 'uses_index']
+    
+    # Check if all expected features are present
+    missing_columns = [col for col in features if col not in df.columns]
+    if missing_columns:
+        st.error(f"Error: The following expected columns are missing: {', '.join(missing_columns)}")
+        return None  # Exit early if any required feature columns are missing
+
     X = df[features]
     y = df['is_slow'].astype(int)
 
@@ -51,12 +68,16 @@ def main():
         st.warning("Please upload a CSV file.")
         return
 
-    # Display a preview of the data
+    # Display the column names and preview the data for debugging
     st.subheader("Query Logs Preview")
-    st.write(df.head())
+    st.write(df.head())  # Show the first few rows of the data
+    st.write("Data Columns:", df.columns)  # Show the column names
 
     # Step 2: Train the Model
     model = preprocess_and_train_model(df)
+
+    if model is None:
+        return  # Stop execution if the model couldn't be trained due to missing data
 
     # Step 3: User Input for Query Analysis
     st.subheader("Enter Your SQL Query")
