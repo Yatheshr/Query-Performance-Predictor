@@ -3,12 +3,16 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-# 1. Load Real SQL Query Logs
-# Load query logs from CSV (use your own CSV file here)
-@st.cache
+# 1. Load Real SQL Query Logs (Updated Caching Method)
+@st.cache_data
 def load_data():
-    # Replace with actual data if available
-    return pd.read_csv("sql_query_logs.csv")
+    uploaded_file = st.file_uploader("Upload your SQL query log file (CSV)", type="csv")
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        return df
+    else:
+        st.warning("Please upload a CSV file.")
+        return None
 
 # 2. Preprocess Data and Train the Model
 def preprocess_and_train_model(df):
@@ -45,6 +49,8 @@ def main():
 
     # Step 1: Load the Data
     df = load_data()
+    if df is None:
+        return
 
     # Display a preview of the data
     st.subheader("Query Logs Preview")
