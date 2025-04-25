@@ -5,14 +5,9 @@ from sklearn.model_selection import train_test_split
 
 # 1. Load Real SQL Query Logs (Updated Caching Method)
 @st.cache_data
-def load_data():
-    uploaded_file = st.file_uploader("Upload your SQL query log file (CSV)", type="csv")
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        return df
-    else:
-        st.warning("Please upload a CSV file.")
-        return None
+def load_data_from_csv(file):
+    # The file is passed in directly from the uploader widget
+    return pd.read_csv(file)
 
 # 2. Preprocess Data and Train the Model
 def preprocess_and_train_model(df):
@@ -48,8 +43,12 @@ def main():
     st.title("SQL Query Performance Predictor")
 
     # Step 1: Load the Data
-    df = load_data()
-    if df is None:
+    uploaded_file = st.file_uploader("Upload your SQL query log file (CSV)", type="csv")
+    
+    if uploaded_file is not None:
+        df = load_data_from_csv(uploaded_file)  # This now happens after the upload
+    else:
+        st.warning("Please upload a CSV file.")
         return
 
     # Display a preview of the data
