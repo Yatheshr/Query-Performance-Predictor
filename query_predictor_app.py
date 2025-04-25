@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 import numpy as np
 
 # 1. Load Real SQL Query Logs (Updated Caching Method)
@@ -28,14 +27,17 @@ def preprocess_and_train_model(df):
         st.error(f"Error: The following expected columns are missing: {', '.join(missing_columns)}")
         return None  # Exit early if any required feature columns are missing
 
+    # Convert 'has_subquery' and 'uses_index' to numeric (True=1, False=0)
+    df['has_subquery'] = df['has_subquery'].map({True: 1, False: 0}).fillna(0)
+    df['uses_index'] = df['uses_index'].map({True: 1, False: 0}).fillna(0)
+
+    # Check if all features are numeric and no NaN values
+    st.write("Features (X):", df[features].head())
+    st.write("Data Types:", df[features].dtypes)
+
     # Extract features and target
     X = df[features]
     y = df['is_slow'].astype(int)
-
-    # Check if data is numeric and no NaN values
-    st.write("Features (X):", X.head())
-    st.write("Target (y):", y.head())
-    st.write("Data Types:", X.dtypes)
 
     # Drop rows with NaN values in the feature set
     X = X.dropna()
